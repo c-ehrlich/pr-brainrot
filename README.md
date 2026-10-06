@@ -2,6 +2,10 @@
 
 Peter and Stewie explain your pull request over Minecraft parkour, as a vertical video posted to the PR.
 
+https://github.com/user-attachments/assets/9f98e16d-da7e-4843-a2bd-66b49ebf3998
+
+<sub>Made by the action for [a rate limiter fix](https://github.com/c-ehrlich/pr-brainrot-sandbox/pull/1).</sub>
+
 - Claude (or any model on OpenRouter) writes a short dialogue from the PR description and diff.
 - Fish Audio voices it, and its speech-to-text times the word-by-word captions.
 - Remotion renders the code being discussed on top and gameplay below. FFmpeg compresses the result under 10 MB so GitHub plays it inline.
