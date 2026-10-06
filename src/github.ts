@@ -26,11 +26,11 @@ export function gh(args: readonly string[], json?: unknown): string {
   });
 }
 
+/** Uses REST rather than `gh pr`, whose GraphQL calls share a separate, easily exhausted quota. */
 export function fetchPullRequest(url: string): PullRequest {
   const { owner, repo, number } = parsePrUrl(url);
-  const view = JSON.parse(gh(["pr", "view", url, "--json", "title,body"])) as {
-    title: string;
-    body: string;
-  };
-  return { owner, repo, number, title: view.title, body: view.body, diff: gh(["pr", "diff", url]) };
+  const path = `repos/${owner}/${repo}/pulls/${number}`;
+  const view = JSON.parse(gh(["api", path, "--jq", "{title, body}"])) as { title: string; body: string | null };
+  const diff = gh(["api", path, "-H", "Accept: application/vnd.github.diff"]);
+  return { owner, repo, number, title: view.title, body: view.body ?? "", diff };
 }

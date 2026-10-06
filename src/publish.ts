@@ -29,7 +29,7 @@ export async function uploadVideo(file: string, pr: PullRequest): Promise<string
   });
   const response = await fetch(`https://uploads.github.com/user-attachments/assets?${query}`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${uploadToken()}`, Accept: "application/json" },
+    headers: { Authorization: `Bearer ${uploadToken()}`, Accept: "application/json", "Content-Type": "video/mp4" },
     body: readFileSync(file),
   });
   if (response.status !== 201) {
