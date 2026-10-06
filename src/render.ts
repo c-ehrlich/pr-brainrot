@@ -6,8 +6,8 @@ import { bundle } from "@remotion/bundler";
 import { renderMedia, selectComposition } from "@remotion/renderer";
 import type { VideoProps } from "./types";
 
-/** Under GitHub's 10 MB attachment limit for free plans, with headroom for container overhead. */
-const TARGET_BYTES = 9.5 * 1024 * 1024;
+/** Under GitHub's 10 MB attachment limit for free plans, whether that means 10^7 bytes or 10 MiB. */
+const TARGET_BYTES = 9 * 1024 * 1024;
 const AUDIO_KBPS = 96;
 /** 720×1280: the code panel stays legible, unlike 540×960. */
 const COMPACT_SCALE = 2 / 3;
