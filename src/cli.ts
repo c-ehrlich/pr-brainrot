@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { CHARACTERS, GAMEPLAY } from "./config";
 import { parseDiff, type Hunk } from "./diff";
@@ -74,7 +74,7 @@ async function main(): Promise<void> {
   const url = args.find((a) => !a.startsWith("--"));
   const flags = new Set(args.filter((a) => a.startsWith("--")));
   if (!url) {
-    console.error("Usage: pnpm make <github-pr-url> [--new-script] [--no-render]");
+    console.error("Usage: pnpm make <github-pr-url> [--new-script] [--no-render] [--full]");
     process.exit(1);
   }
   if (!process.env.FISH_API_KEY) {
@@ -135,8 +135,9 @@ async function main(): Promise<void> {
 
   if (flags.has("--no-render")) return;
   const output = path.join("out", `${slug}.mp4`);
-  await renderVideo(props, output);
-  console.log(`\nDone: ${path.resolve(output)}`);
+  await renderVideo(props, output, { full: flags.has("--full") });
+  const megabytes = statSync(output).size / 1024 / 1024;
+  console.log(`\nDone: ${path.resolve(output)} (${megabytes.toFixed(1)} MB)`);
 }
 
 main().catch((error: unknown) => {

@@ -32,6 +32,7 @@ Requires `gh` (logged in, for private repos), `claude` (Claude Code CLI) and `ff
 Everything lands in `public/runs/<owner>-<repo>-<number>/` and is reused on the next run:
 
 - `script.json` is kept until you pass `--new-script`. Edit it by hand to tweak lines; only changed lines are re-voiced.
+- Output is 720×1280, bitrate-capped to land under 10 MB for GitHub attachments. `--full` renders 1080×1920 at full quality instead.
 - `--no-render` stops after writing `out/<slug>.props.json`.
 - `pnpm studio --props=out/<slug>.props.json` opens Remotion Studio for live-editing the visuals.
 
