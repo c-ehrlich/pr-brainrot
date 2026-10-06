@@ -68,7 +68,8 @@ runs:
       uses: actions/cache@v4
       with:
         path: ${{ github.action_path }}/node_modules/.remotion
-        key: remotion-chrome-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(format('{0}/pnpm-lock.yaml', github.action_path)) }}
+        # hashFiles() only sees the caller's workspace, so key on the pinned Remotion version instead.
+        key: remotion-chrome-${{ runner.os }}-${{ runner.arch }}-4.0.533
 
     - name: Generate and post the video
       id: run
