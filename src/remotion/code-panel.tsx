@@ -1,6 +1,7 @@
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { PANEL_HEIGHT, WIDTH } from "../config";
 import type { CodeLine, CodeView, LineKind } from "../types";
+import { CODE_FONT, UI_FONT } from "./fonts";
 import type { TimedBeat } from "./timeline";
 
 const HEADER_HEIGHT = 110;
@@ -12,7 +13,6 @@ const MAX_FONT_SIZE = 40;
 const MIN_FONT_SIZE = 26;
 /** Monospace glyph width relative to font size. */
 const CHAR_WIDTH_RATIO = 0.6;
-const FONT = '"JetBrains Mono", "SF Mono", Menlo, monospace';
 
 const LINE_STYLE: Record<LineKind, { background: string; marker: string; markerColor: string }> = {
   add: { background: "rgba(46,160,67,0.22)", marker: "+", markerColor: "#3fb950" },
@@ -64,10 +64,10 @@ const TitleCard: React.FC<{ title: string; prLabel: string }> = ({ title, prLabe
       justifyContent: "center",
       padding: "0 80px",
       gap: 32,
-      fontFamily: '"Helvetica Neue", Arial, sans-serif',
+      fontFamily: UI_FONT,
     }}
   >
-    <div style={{ color: "#8b949e", fontSize: 40, fontFamily: FONT }}>{prLabel}</div>
+    <div style={{ color: "#8b949e", fontSize: 40, fontFamily: CODE_FONT }}>{prLabel}</div>
     <div style={{ color: "#f0f6fc", fontSize: 92, fontWeight: 900, lineHeight: 1.05 }}>{title}</div>
   </div>
 );
@@ -98,7 +98,7 @@ export const CodePanel: React.FC<{
   const fileName = view.file.split("/").at(-1);
 
   return (
-    <div style={{ height: "100%", background: "#0d1117", fontFamily: FONT }}>
+    <div style={{ height: "100%", background: "#0d1117", fontFamily: CODE_FONT }}>
       <div
         style={{
           height: HEADER_HEIGHT,

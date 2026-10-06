@@ -1,0 +1,26 @@
+# Make a video for every pull request when it is opened or marked ready for review.
+# Pull requests from forks are skipped: GitHub does not give them secrets.
+name: Brainrot
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+concurrency:
+  group: brainrot-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  brainrot:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: c-ehrlich/pr-brainrot@v1
+        with:
+          fish-api-key: ${{ secrets.FISH_API_KEY }}
+          upload-token: ${{ secrets.BRAINROT_UPLOAD_TOKEN }}
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          mode: edit

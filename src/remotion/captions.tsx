@@ -1,6 +1,7 @@
 import { spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { PANEL_HEIGHT } from "../config";
 import type { Word } from "../types";
+import { CAPTION_FONT } from "./fonts";
 
 const WORDS_PER_PAGE = 3;
 
@@ -31,7 +32,7 @@ export const Captions: React.FC<{ words: readonly Word[] }> = ({ words }) => {
         flexWrap: "wrap",
         justifyContent: "center",
         gap: "0 40px",
-        fontFamily: '"Arial Black", "Helvetica Neue", Arial, sans-serif',
+        fontFamily: CAPTION_FONT,
         fontWeight: 900,
         fontSize: 88,
         lineHeight: 1.1,

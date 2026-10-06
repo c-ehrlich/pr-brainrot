@@ -1,18 +1,18 @@
 import { AbsoluteFill, Audio, Loop, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { GAMEPLAY, PANEL_HEIGHT } from "../config";
+import { PANEL_HEIGHT } from "../config";
 import type { VideoProps } from "../types";
 import { Captions } from "./captions";
 import { CodePanel } from "./code-panel";
 import { Speaker } from "./speaker";
 import { activeBeatIndex, buildTimeline } from "./timeline";
 
-export const BrainrotVideo: React.FC<VideoProps> = ({ title, prLabel, beats, gameplayStartSeconds }) => {
+export const BrainrotVideo: React.FC<VideoProps> = ({ title, prLabel, beats, gameplay, gameplayStartSeconds }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const timeline = buildTimeline(beats, fps);
   const active = activeBeatIndex(timeline, frame);
   const gameplayStart = Math.round(gameplayStartSeconds * fps);
-  const gameplayFrames = GAMEPLAY.durationInSeconds * fps - gameplayStart;
+  const gameplayFrames = gameplay.durationInSeconds * fps - gameplayStart;
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#0d1117" }}>
@@ -21,7 +21,12 @@ export const BrainrotVideo: React.FC<VideoProps> = ({ title, prLabel, beats, gam
       </div>
       <div style={{ position: "absolute", top: PANEL_HEIGHT, left: 0, right: 0, bottom: 0, overflow: "hidden" }}>
         <Loop durationInFrames={gameplayFrames}>
-          <OffthreadVideo src={staticFile(GAMEPLAY.src)} trimBefore={gameplayStart} muted />
+          <OffthreadVideo
+            src={staticFile(gameplay.src)}
+            trimBefore={gameplayStart}
+            muted
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
         </Loop>
       </div>
       {timeline.map((timed, i) => (

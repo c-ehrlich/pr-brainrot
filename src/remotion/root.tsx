@@ -1,10 +1,13 @@
 import { Composition } from "remotion";
-import { FPS, HEIGHT, WIDTH } from "../config";
+import { FPS, GAMEPLAY, HEIGHT, WIDTH } from "../config";
 import type { VideoProps } from "../types";
+import { loadFonts } from "./fonts";
 import { totalFrames } from "./timeline";
 import { BrainrotVideo } from "./video";
 
-const EMPTY_PROPS: VideoProps = { title: "No props", prLabel: "", beats: [], gameplayStartSeconds: 0 };
+loadFonts();
+
+const EMPTY_PROPS: VideoProps = { title: "No props", prLabel: "", beats: [], gameplay: GAMEPLAY, gameplayStartSeconds: 0 };
 
 export const RemotionRoot: React.FC = () => (
   <Composition

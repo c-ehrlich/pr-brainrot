@@ -1,52 +1,103 @@
 # pr-brainrot
 
-Turns a GitHub pull request into a vertical "brainrot" short: Peter and Stewie explain the diff while Minecraft parkour plays underneath.
+Peter and Stewie explain your pull request over Minecraft parkour, as a vertical video posted to the PR.
+
+- Claude (or any model on OpenRouter) writes a short dialogue from the PR description and diff.
+- Fish Audio voices it, and its speech-to-text times the word-by-word captions.
+- Remotion renders the code being discussed on top and gameplay below. FFmpeg compresses the result under 10 MB so GitHub plays it inline.
+
+A video takes about 3 to 5 minutes on a standard runner.
+
+## GitHub Action
+
+### Secrets
+
+Add these as repository or organization secrets:
+
+| Secret | What it is |
+| --- | --- |
+| `FISH_API_KEY` | [Fish Audio](https://fish.audio/app/developers) API key. API credit is separate from platform credit. |
+| `ANTHROPIC_API_KEY` or `OPENROUTER_API_KEY` | Writes the script. Set one. |
+| `BRAINROT_UPLOAD_TOKEN` | Personal access token used only to upload the video. GitHub's attachment endpoint rejects workflow tokens. Fine-grained: Contents, Issues and Pull requests read & write on the repositories that use the action. |
+
+### Workflow
+
+Pick a trigger: copy [`examples/on-comment.yml`](examples/on-comment.yml) to run when someone comments `/brainrot` on a PR, or [`examples/on-pull-request.yml`](examples/on-pull-request.yml) to run for every PR when it is opened or marked ready for review. Save it as `.github/workflows/brainrot.yml`.
+
+```yaml
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  brainrot:
+    if: github.event.issue.pull_request && startsWith(github.event.comment.body, '/brainrot')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: c-ehrlich/pr-brainrot@v1
+        with:
+          fish-api-key: ${{ secrets.FISH_API_KEY }}
+          upload-token: ${{ secrets.BRAINROT_UPLOAD_TOKEN }}
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+The comment trigger only runs for commenters whose association is in `allowed-associations`, so strangers cannot spend your credits on public repositories. The bot reacts 👀 while it works, 🚀 when the video is posted, and 😕 with an error comment if it fails. The PR trigger skips drafts and pull requests from forks, which receive no secrets; comment `/brainrot` on those instead. The action reads the diff through the API and never checks out or runs pull request code.
+
+### Inputs
+
+| Input | Default | Description |
+| --- | --- | --- |
+| `fish-api-key` | required | Fish Audio API key. |
+| `upload-token` | required | Personal access token for the video upload. |
+| `anthropic-api-key` | | Anthropic API key. |
+| `openrouter-api-key` | | OpenRouter API key. Used when no Anthropic key is set. |
+| `model` | `claude-opus-5-5` / `anthropic/claude-opus-5.5` | Script-writing model. |
+| `mode` | `comment` | `comment` posts a new comment. `edit` adds a section to the PR description; reruns replace it. |
+| `command` | `/brainrot` | Comment prefix that triggers a run. |
+| `allowed-associations` | `OWNER,MEMBER,COLLABORATOR` | Who can trigger a run by comment. |
+| `gameplay-url` | bundled parkour clip | MP4 to use as the background. |
+| `github-token` | `github.token` | Reads the PR and posts the result. |
+
+Output: `video-url`, the uploaded video's URL.
+
+## Local CLI
 
 ```bash
 pnpm install
-echo "FISH_API_KEY=..." > .env
+cp .env.example .env   # add FISH_API_KEY, plus ANTHROPIC_API_KEY or OPENROUTER_API_KEY
 pnpm make https://github.com/owner/repo/pull/123
 # → out/owner-repo-123.mp4
 ```
 
-The gameplay clip is not committed (76 MB). Fetch it once:
+Requires `gh` (logged in), `ffmpeg` and `ffprobe` on `PATH`. Without an Anthropic or OpenRouter key, the script is written by the local `claude` CLI (Claude Code).
 
-```bash
-uvx yt-dlp -f "bv*[height<=1080][vcodec^=avc1]" -o /tmp/parkour-raw.mp4 "https://www.youtube.com/watch?v=XBIaqOm0RKQ"
-ffmpeg -ss 20 -t 180 -i /tmp/parkour-raw.mp4 -an -vf "scale=-2:1080,crop=1080:960,fps=30" \
-  -c:v libx264 -crf 23 -preset veryfast -movflags +faststart public/gameplay/parkour.mp4
-```
+| Flag | Effect |
+| --- | --- |
+| `--new-script` | Ask the model again instead of reusing `public/runs/<slug>/script.json`. |
+| `--no-render` | Stop after writing `out/<slug>.props.json`. |
+| `--full` | Keep the 1080×1920 render instead of the compressed 720×1280 one. |
+| `--gameplay=<url>` | Use another gameplay clip. |
+| `--publish=comment\|edit` | Upload the video and post it to the PR, like the action. |
 
-Requires `gh` (logged in, for private repos), `claude` (Claude Code CLI) and `ffprobe` on `PATH`. Fish Audio API credit is separate from platform credit; add it at https://fish.audio/app/developers.
+Each run caches its script and voiced lines under `public/runs/<owner>-<repo>-<number>/`. Edit `script.json` by hand to tweak lines; only changed lines are voiced again. `pnpm studio --props=out/<slug>.props.json` opens Remotion Studio for live-editing the visuals.
 
-## Pipeline
+Environment overrides: `PR_BRAINROT_PROVIDER` (`anthropic`, `openrouter` or `claude-code`), `PR_BRAINROT_MODEL`, `FISH_TTS_MODEL` (default `s2.1-pro`), `FISH_ASR_MODEL` (default `transcribe-1`).
 
-1. `gh pr view` / `gh pr diff` fetch the PR. The diff is split into hunks (`src/diff.ts`), skipping lockfiles and snapshots.
-2. `claude -p` writes the dialogue as structured JSON (`src/script.ts`). Each line can point at a hunk and a line range to show.
-3. Fish Audio voices each line (`src/fish.ts`); Fish speech-to-text provides word timings for captions, with a length-weighted estimate as fallback.
-4. Shiki highlights the referenced hunks (`src/highlight.ts`).
-5. Remotion renders 1080×1920: code on top, gameplay below, the speaking character and word-by-word captions on the seam (`src/remotion/`).
+## Customizing
 
-## Iterating
-
-Everything lands in `public/runs/<owner>-<repo>-<number>/` and is reused on the next run:
-
-- `script.json` is kept until you pass `--new-script`. Edit it by hand to tweak lines; only changed lines are re-voiced.
-- Output is 720×1280, re-encoded with FFmpeg (two-pass H.264 Main, yuv420p) to land under 10 MB and play in GitHub's player. `--full` keeps the 1080×1920 Remotion render instead.
-- `--no-render` stops after writing `out/<slug>.props.json`.
-- `pnpm studio --props=out/<slug>.props.json` opens Remotion Studio for live-editing the visuals.
-
-## Configuration
-
-`src/config.ts` holds the cast (Fish voice IDs, images, personas used in the prompt) and the gameplay clip. Find other voices with:
+`src/config.ts` holds the cast: Fish voice IDs, images, and the personas used in the prompt. Find other voices with:
 
 ```bash
 curl -s "https://api.fish.audio/model?title=Stewie&sort_by=task_count" | jq '.items[] | {_id, title, task_count}'
 ```
 
-Environment overrides: `PR_BRAINROT_MODEL` (default `opus`), `FISH_TTS_MODEL` (default `s2.1-pro`), `FISH_ASR_MODEL` (default `transcribe-1`).
+## Notes
 
-## Future
-
-- Remotion needs a company licence for companies with 4+ people. Plain FFmpeg could replace it: pre-render the code panel and captions as PNG frames (or ASS subtitles), then overlay them on the gameplay with `ffmpeg -filter_complex`. That drops the licence and the headless Chrome, at the cost of fiddlier animation.
-- Trigger from a PR comment (`/brainrot`) via a GitHub Action that runs this script and uploads the MP4.
+- Remotion requires a [company license](https://www.remotion.pro/license) for companies with four or more people. FFmpeg alone could replace it: render the code panel and captions as image frames or ASS subtitles, then overlay them on the gameplay with `ffmpeg -filter_complex`. That removes the license and the headless Chrome, at the cost of fiddlier animation.
+- The upload uses the undocumented endpoint behind GitHub's drag-and-drop attachments. It is the only way to get a video that plays inline, and it may change without notice.
+- Character images, voices and gameplay belong to their owners. This is a non-commercial joke project.
+- Fonts: [Archivo Black](https://github.com/Omnibus-Type/ArchivoBlack), [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) and [Inter](https://github.com/rsms/inter), all under the SIL Open Font License (`public/fonts/`).

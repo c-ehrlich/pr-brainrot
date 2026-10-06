@@ -1,0 +1,27 @@
+# Comment "/brainrot" on a pull request to get a video.
+name: Brainrot
+
+on:
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: brainrot-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  brainrot:
+    # Skip the runner entirely for unrelated comments; the action re-checks.
+    if: github.event.issue.pull_request && startsWith(github.event.comment.body, '/brainrot')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: c-ehrlich/pr-brainrot@v1
+        with:
+          fish-api-key: ${{ secrets.FISH_API_KEY }}
+          upload-token: ${{ secrets.BRAINROT_UPLOAD_TOKEN }}
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # openrouter-api-key: ${{ secrets.OPENROUTER_API_KEY }}

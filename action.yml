@@ -1,0 +1,88 @@
+name: PR Brainrot
+description: Peter and Stewie explain your pull request over Minecraft parkour, as a short video posted to the PR.
+author: c-ehrlich
+branding:
+  icon: video
+  color: yellow
+
+inputs:
+  fish-api-key:
+    description: Fish Audio API key for the character voices. Needs API credit, which is separate from platform credit.
+    required: true
+  upload-token:
+    description: >-
+      Personal access token used only to upload the video, because GitHub rejects workflow tokens on the
+      attachment endpoint. Fine-grained with Contents, Issues and Pull requests read & write on the repository.
+    required: true
+  anthropic-api-key:
+    description: Anthropic API key for writing the script. Set this or openrouter-api-key.
+    required: false
+  openrouter-api-key:
+    description: OpenRouter API key for writing the script. Set this or anthropic-api-key.
+    required: false
+  model:
+    description: Model override. Defaults to claude-opus-5-5 (Anthropic) or anthropic/claude-opus-5.5 (OpenRouter).
+    required: false
+  mode:
+    description: "Where the video goes: comment (a new PR comment) or edit (a section of the PR description that reruns replace)."
+    required: false
+    default: comment
+  command:
+    description: Comment prefix that triggers a run on issue_comment events.
+    required: false
+    default: /brainrot
+  allowed-associations:
+    description: Comma-separated author associations allowed to trigger a run by comment.
+    required: false
+    default: OWNER,MEMBER,COLLABORATOR
+  gameplay-url:
+    description: URL of an MP4 to use instead of the bundled Minecraft parkour clip.
+    required: false
+  github-token:
+    description: Token for reading the PR and posting the comment or description edit.
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  video-url:
+    description: The uploaded video's URL. Empty when the run was skipped.
+    value: ${{ steps.run.outputs.video-url }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 24
+
+    - name: Install dependencies
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |
+        npx --yes pnpm@8.15.0 install --frozen-lockfile
+        if ! command -v ffmpeg >/dev/null; then
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+        fi
+
+    - name: Cache Remotion's Chrome
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.action_path }}/node_modules/.remotion
+        key: remotion-chrome-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(format('{0}/pnpm-lock.yaml', github.action_path)) }}
+
+    - name: Generate and post the video
+      id: run
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        FISH_API_KEY: ${{ inputs.fish-api-key }}
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+        OPENROUTER_API_KEY: ${{ inputs.openrouter-api-key }}
+        PR_BRAINROT_MODEL: ${{ inputs.model }}
+        PR_BRAINROT_MODE: ${{ inputs.mode }}
+        PR_BRAINROT_COMMAND: ${{ inputs.command }}
+        PR_BRAINROT_ALLOWED_ASSOCIATIONS: ${{ inputs.allowed-associations }}
+        PR_BRAINROT_GAMEPLAY_URL: ${{ inputs.gameplay-url }}
+        UPLOAD_TOKEN: ${{ inputs.upload-token }}
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: node_modules/.bin/tsx src/action.ts

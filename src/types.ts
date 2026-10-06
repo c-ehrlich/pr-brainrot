@@ -39,11 +39,18 @@ export interface Beat {
   readonly code: CodeView | null;
 }
 
+export interface Gameplay {
+  /** Path relative to `public/`. */
+  readonly src: string;
+  readonly durationInSeconds: number;
+}
+
 // A type alias rather than an interface: Remotion requires composition props
 // to be assignable to Record<string, unknown>.
 export type VideoProps = {
   readonly title: string;
   readonly prLabel: string;
   readonly beats: readonly Beat[];
+  readonly gameplay: Gameplay;
   readonly gameplayStartSeconds: number;
 };

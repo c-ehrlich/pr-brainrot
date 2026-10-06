@@ -31,5 +31,5 @@ export const CHARACTER_IDS = Object.keys(CHARACTERS) as CharacterId[];
 
 export const GAMEPLAY = {
   src: "gameplay/parkour.mp4",
-  durationInSeconds: 180,
+  durationInSeconds: 90,
 } as const;

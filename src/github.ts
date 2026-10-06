@@ -17,8 +17,13 @@ export function parsePrUrl(url: string): { owner: string; repo: string; number: 
   return { owner: match[1], repo: match[2], number: Number(match[3]) };
 }
 
-function gh(args: readonly string[]): string {
-  return execFileSync("gh", args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+/** Runs the GitHub CLI. `json` is sent as the request body of `gh api --input -`. */
+export function gh(args: readonly string[], json?: unknown): string {
+  return execFileSync("gh", json === undefined ? args : [...args, "--input", "-"], {
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+    input: json === undefined ? undefined : JSON.stringify(json),
+  });
 }
 
 export function fetchPullRequest(url: string): PullRequest {
